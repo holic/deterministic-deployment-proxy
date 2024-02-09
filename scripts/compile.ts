@@ -92,15 +92,16 @@ async function writeFactoryDeployerTransaction(contract: CompilerOutputContract)
 	const signerAddress = arrayFromHexString(keccak256(secp256k1.recoverPubKey(hashedSignedEncodedTransaction, { r: r, s: s}, 0).encode('array').slice(1)).slice(-40))
 	const contractAddress = arrayFromHexString(keccak256(rlpEncode([signerAddress, nonce])).slice(-40))
 
+	const deployment = {
+		gasPrice: 100000000000,
+		gasLimit: deploymentGas,
+		signerAddress: signerAddress.reduce((x,y)=>x+=y.toString(16).padStart(2, '0'), ''),
+		transaction: signedEncodedTransaction.reduce((x,y)=>x+=y.toString(16).padStart(2, '0'), ''),
+		address: contractAddress.reduce((x,y)=>x+=y.toString(16).padStart(2, '0'), '')
+	}
+
 	const filePath = path.join(__dirname, '../output/deployment.json')
-	const fileContents = `{
-	"gasPrice": 100000000000,
-	"gasLimit": ${deploymentGas},
-	"signerAddress": "${signerAddress.reduce((x,y)=>x+=y.toString(16).padStart(2, '0'), '')}",
-	"transaction": "${signedEncodedTransaction.reduce((x,y)=>x+=y.toString(16).padStart(2, '0'), '')}",
-	"address": "${contractAddress.reduce((x,y)=>x+=y.toString(16).padStart(2, '0'), '')}"
-}
-`
+	const fileContents = JSON.stringify(deployment, null, "\t") + "\n"
 	await filesystem.writeFile(filePath, fileContents, { encoding: 'utf8', flag: 'w' })
 }
 
